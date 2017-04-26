@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.xml.mapper.UserMapper">
+    <!--<cache></cache>-->
+
+    <insert id="insert" parameterType="User" useGeneratedKeys="true">
+--      解决Insert数据时不支持主键自动生成的问题，他可以很随意的设置生成主键的方式。
+        <!--<selectKey keyProperty="id" resultType="Integer" order="AFTER">-->
+            <!--select last_insert_id()-->
+        <!--</selectKey>-->
+        INSERT INTO user
+        (username,email)
+        VALUES
+        (#{username},#{email})
+    </insert>
+
+    <select id="selectById" resultType="User">
+        SELECT * from user where id = #{id}
+    </select>
+
+    <!--批量添加-->
+    <insert id="insertByList" parameterType="User">
+        INSERT INTO user
+        (username,email)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.username},#{item.email})
+        </foreach>
+    </insert>
+    <!--动态修改-->
+    <update id="update"  parameterType="User">
+        update user
+        <set>
+            <if test="username!=null">
+                username=#{username},
+            </if>
+            <if test="email!=null">
+                email=#{email},
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+    <!--两表联查 没有外键 一对一-->
+    <resultMap id="resultMapUser" type="User">
+        <id property="id" column="u_id"/>
+        <result property="username" column="u_name"/>
+        <result property="email" column="u_email"/>
+        <association property="product" javaType="Product">
+            <result property="code" column="p_code"/>
+            <result property="name" column="p_name"/>
+        </association>
+    </resultMap>
+    <select id="findByUser" resultMap="resultMapUser">
+        SELECT u.id as u_id,u.username as u_name,u.email as u_email,p.code as p_code,p.name as p_name
+        from user u,product p
+        where u.username=p.code
+    </select>
+    <!--两表联查 没有外键 一对多-->
+    <resultMap id="resultMapUserBook" type="User">
+        <id property="id" column="u_id"/>
+        <result property="username" column="u_name"/>
+        <result property="email" column="u_email"/>
+        <collection property="book" ofType="Book">
+            <result property="bookName" column="b_bookName"/>
+            <result property="author" column="b_author"/>
+        </collection>
+    </resultMap>
+    <select id="findUserBook" resultMap="resultMapUserBook">
+        SELECT u.id as u_id,u.username as u_name,u.email as u_email,b.bookName as b_bookName,b.author as b_author
+        from user u inner JOIN
+        book b
+        ON  u.id=b.userId
+    </select>
+<!--where标签 搜索使用-->
+    <select id="findProductByCodeName" resultType="Product">
+        SELECT * from product
+        <where>
+            <if test="code!=null">
+                code =#{code}
+            </if>
+            <if test="name!=null">
+                AND NAME LIKE '%${name}%'
+            </if>
+        </where>
+    </select>
+</mapper>
